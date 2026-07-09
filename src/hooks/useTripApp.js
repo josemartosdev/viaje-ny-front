@@ -59,6 +59,31 @@ export function useTripApp() {
     placeId: null,
     draft: emptyPlaceDraft,
   });
+  const [activityEditModal, setActivityEditModal] = useState({
+    isOpen: false,
+    draft: {
+      id: null,
+      dbId: null,
+      title: "",
+      time: "",
+      category: "",
+      note: "",
+      status: "planned",
+      placeId: null,
+    },
+  });
+  const [ticketEditModal, setTicketEditModal] = useState({
+    isOpen: false,
+    draft: {
+      id: null,
+      dbId: null,
+      type: "entry",
+      title: "",
+      code: "",
+      holder: "",
+      note: "",
+    },
+  });
   const [activityPlacePicker, setActivityPlacePicker] = useState({
     isOpen: false,
     activityId: null,
@@ -792,18 +817,13 @@ export function useTripApp() {
     }
     try {
       if (placeModal.mode === "create") {
-        const created = await createPlace(payload);
-        setPlaces((c) => [...c, created]);
+        await createPlace(payload);
       } else {
         await updatePlace(placeModal.placeId, payload);
-        setPlaces((c) =>
-          c.map((p) =>
-            p.id === placeModal.placeId ? { ...p, ...payload } : p,
-          ),
-        );
       }
       closePlaceModal();
       setApiSync((c) => ({ ...c, error: "" }));
+      await refreshTripFromBackend();
     } catch (error) {
       setApiSync((c) => ({
         ...c,
@@ -815,7 +835,7 @@ export function useTripApp() {
   async function removePlaceEntity(placeId) {
     try {
       await deletePlace(placeId);
-      setPlaces((c) => c.filter((p) => p.id !== placeId));
+      await refreshTripFromBackend();
       setApiSync((c) => ({ ...c, error: "" }));
     } catch (error) {
       setApiSync((c) => ({
@@ -993,6 +1013,53 @@ export function useTripApp() {
     openActivityPlacePicker,
     closeActivityPlacePicker,
     assignPlaceToActivity,
+    // Handlers — edicion actividad
+    activityEditModal,
+    setActivityEditModal,
+    openActivityEditModal: (activity) =>
+      setActivityEditModal({
+        isOpen: true,
+        draft: {
+          id: activity.id,
+          dbId: activity.dbId,
+          title: activity.title ?? "",
+          time: activity.time ?? "",
+          category: activity.category ?? "",
+          note: activity.note ?? "",
+          status: activity.status ?? "planned",
+          placeId: activity.placeId ?? null,
+        },
+      }),
+    closeActivityEditModal: () =>
+      setActivityEditModal((c) => ({ ...c, isOpen: false })),
+    updateActivityEditField: (field, value) =>
+      setActivityEditModal((c) => ({
+        ...c,
+        draft: { ...c.draft, [field]: value },
+      })),
+    // Handlers — edicion ticket
+    ticketEditModal,
+    setTicketEditModal,
+    openTicketEditModal: (doc) =>
+      setTicketEditModal({
+        isOpen: true,
+        draft: {
+          id: doc.id,
+          dbId: doc.dbId,
+          type: doc.type ?? "entry",
+          title: doc.title ?? "",
+          code: doc.code ?? "",
+          holder: doc.holder ?? "",
+          note: doc.note ?? "",
+        },
+      }),
+    closeTicketEditModal: () =>
+      setTicketEditModal((c) => ({ ...c, isOpen: false })),
+    updateTicketEditField: (field, value) =>
+      setTicketEditModal((c) => ({
+        ...c,
+        draft: { ...c.draft, [field]: value },
+      })),
     // Handlers — mapa
     handleMapSearchSubmit,
     handleUseMyLocation,

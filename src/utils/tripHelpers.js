@@ -243,7 +243,12 @@ export function buildTripFromApi(
         .filter((activity) => {
           const lat = Number(activity.linkedPlace?.lat);
           const lng = Number(activity.linkedPlace?.lng);
-          return Number.isFinite(lat) && Number.isFinite(lng);
+          // Excluir coordenadas vacías (0,0) y no finitas
+          return (
+            Number.isFinite(lat) &&
+            Number.isFinite(lng) &&
+            (Math.abs(lat) > 0.001 || Math.abs(lng) > 0.001)
+          );
         })
         .map((activity) => ({
           name: activity.linkedPlace?.name || activity.title,
